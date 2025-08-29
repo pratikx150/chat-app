@@ -19,11 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input');
   const emojiBtn = document.getElementById('emoji-btn');
 
-  let pollInterval, statusInterval;
-  let currentUser;
-  let isTyping = false;
-  let typingTimeout;
-  let recorder, stream;
+  let ws, currentUser;
 
   loginDiv.classList.add('active');
 
@@ -102,15 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   messageInput.addEventListener('input', () => {
-    if (!isTyping) {
-      isTyping = true;
-      sendStatus('start_typing');
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'typing', username: currentUser }));
     }
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
-      isTyping = false;
-      sendStatus('stop_typing');
-    }, 5000);
   });
 
   attachBtn.addEventListener('click', () => fileInput.click());
@@ -124,6 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   recordBtn.addEventListener('click', async () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
+
     if (!recorder) {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -150,118 +142,42 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   logoutBtn.addEventListener('click', () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'logout', username: currentUser }));
+      ws.close();
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('username');
-    clearInterval(pollInterval);
-    clearInterval(statusInterval);
     chatDiv.style.display = 'none';
     loginDiv.style.display = 'block';
     setTimeout(() => loginDiv.classList.add('active'), 10);
   });
 
   async function sendMessage(text) {
-    const token = localStorage.getItem('token');
-    if (!token) return alert('Please login again');
-
-    const res = await fetch('/api/messages', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ text })
-    });
-
-    if (res.ok) {
-      fetchMessages();
-      sendStatus('update_active');
-      if (isTyping) {
-        clearTimeout(typingTimeout);
-        sendStatus('stop_typing');
-        isTyping = false;
-      }
-    } else {
-      const error = await res.json();
-      alert(`Message failed: ${error.error || 'Unknown error'}`);
-      console.error('Message error:', error);
-    }
+    if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
+    ws.send(JSON.stringify({ type: 'message', username: currentUser, content: text, timestamp: new Date().toISOString() }));
   }
 
   async function sendFile(file, filename = file.name) {
-    const token = localStorage.getItem('token');
-    if (!token) return alert('Please login again');
+    if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
 
     const formData = new FormData();
     formData.append('file', file, filename);
 
     const res = await fetch('/api/messages', {
       method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       body: formData
     });
 
     if (res.ok) {
-      fetchMessages();
-      sendStatus('update_active');
+      const data = await res.json();
+      ws.send(JSON.stringify({ type: 'message', ...data.message, username: currentUser }));
     } else {
       const error = await res.json();
       alert(`File upload failed: ${error.error || 'Unknown error'}`);
       console.error('File upload error:', error);
     }
-  }
-
-  async function fetchMessages() {
-    const res = await fetch('/api/messages');
-    if (res.ok) {
-      const messages = await res.json();
-      messagesDiv.innerHTML = '';
-      messages.forEach(msg => {
-        const isSelf = msg.username === currentUser;
-        const div = document.createElement('div');
-        div.classList.add('message', isSelf ? 'self' : '');
-        let contentHtml = '';
-        if (msg.type === 'text') {
-          contentHtml = msg.content;
-        } else if (msg.type === 'image') {
-          contentHtml = `<img src="${msg.content}" alt="image" style="max-width:100%;border-radius:8px;">`;
-        } else if (msg.type === 'audio') {
-          contentHtml = `<audio src="${msg.content}" controls></audio>`;
-        } else {
-          contentHtml = `<a href="${msg.content}" download>Download</a>`;
-        }
-        div.innerHTML = contentHtml + `<div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
-        messagesDiv.appendChild(div);
-      });
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    } else {
-      console.error('Fetch messages error:', await res.json());
-    }
-  }
-
-  async function fetchStatus() {
-    const res = await fetch('/api/status');
-    if (res.ok) {
-      const { online, typing } = await res.json();
-      onlineUsers.textContent = `Online: ${online.join(', ') || 'None'}`;
-    } else {
-      console.error('Fetch status error:', await res.json());
-    }
-  }
-
-  async function sendStatus(action) {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const res = await fetch('/api/status', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ action })
-    });
-    if (!res.ok) console.error('Status update error:', await res.json());
   }
 
   function showChat() {
@@ -276,14 +192,54 @@ document.addEventListener('DOMContentLoaded', () => {
     loginDiv.style.display = 'none';
     registerDiv.style.display = 'none';
     chatDiv.style.display = 'flex';
-    fetchMessages();
-    fetchStatus();
-    sendStatus('update_active');
-    pollInterval = setInterval(fetchMessages, 5000);
-    statusInterval = setInterval(() => {
-      fetchStatus();
-      sendStatus('update_active');
-    }, 10000);
+
+    ws = new WebSocket('wss://your-vercel-url/api/ws');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'join', username: currentUser }));
+      fetchInitialMessages();
+    };
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'message') {
+        displayMessage(data);
+      } else if (data.type === 'online') {
+        onlineUsers.textContent = `Online: ${data.users.join(', ') || 'None'}`;
+      } else if (data.type === 'typing') {
+        // Add typing indicator if desired
+      }
+    };
+    ws.onclose = () => {
+      console.log('WebSocket disconnected');
+    };
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+  }
+
+  function fetchInitialMessages() {
+    fetch('/api/messages')
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(messages => messages.forEach(displayMessage))
+      .catch(err => console.error('Initial messages fetch error:', err));
+  }
+
+  function displayMessage(msg) {
+    const isSelf = msg.username === currentUser;
+    const div = document.createElement('div');
+    div.classList.add('message', isSelf ? 'self' : '');
+    let contentHtml = '';
+    if (msg.type === 'text') {
+      contentHtml = msg.content;
+    } else if (msg.type === 'image') {
+      contentHtml = `<img src="${msg.content}" alt="image" style="max-width:100%;border-radius:8px;">`;
+    } else if (msg.type === 'audio') {
+      contentHtml = `<audio src="${msg.content}" controls></audio>`;
+    } else {
+      contentHtml = `<a href="${msg.content}" download>Download</a>`;
+    }
+    div.innerHTML = contentHtml + `<div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
   if (localStorage.getItem('token')) {
