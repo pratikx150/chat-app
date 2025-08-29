@@ -1,30 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nest</title>
-    <link rel="stylesheet" href="/style.css">
-    <link rel="shortcut icon" href="/public/favicon.svg" id="favicon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nest Chat</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="app">
-        <div id="login-container" class="login-container flex flex-col items-center justify-center min-h-screen p-4">
-            <form id="loginForm" class="login-form w-full max-w-sm bg-[var(--bg-secondary)] p-6 rounded-lg shadow-lg">
-                <h1 class="login-title text-2xl font-bold mb-4 text-center">Welcome to Nest</h1>
-                <input type="text" id="usernameInput" placeholder="Enter your username" class="input-styled w-full mb-4">
-                <input type="password" id="passwordInput" placeholder="Enter password" class="input-styled w-full mb-4">
-                <button type="submit" class="button-primary w-full" id="loginButton">Join Nest</button>
-            </form>
-        </div>
-        <div id="chat-app" class="hidden flex flex-col h-screen">
-            <div class="header max-w-6xl mx-auto px-4 py-2" id="header"></div>
-            <div class="chat-container flex-1 overflow-y-auto p-4" id="chatContainer"></div>
-            <div class="input-container p-4 bg-[var(--bg-secondary)]" id="inputContainer"></div>
-            <div id="modals"></div>
-        </div>
+  <div id="login" class="auth-container">
+    <div class="auth-box">
+      <h1>Nest Chat</h1>
+      <form id="login-form">
+        <input type="text" id="login-username" placeholder="Username" required>
+        <input type="password" id="login-password" placeholder="Password" required>
+        <button type="submit">Enter Chat</button>
+      </form>
+      <p>New user? <a href="#" id="switch-to-register">Register here</a></p>
     </div>
-    <div id="debug" class="p-4 text-red-500 hidden">Error: JavaScript not loaded. Check Console for details.</div>
-    <script src="/script.js"></script>
+  </div>
+
+  <div id="register" class="auth-container" style="display: none;">
+    <div class="auth-box">
+      <h1>Join Nest</h1>
+      <form id="register-form">
+        <input type="text" id="register-username" placeholder="Username" required>
+        <input type="password" id="register-password" placeholder="Password" required>
+        <button type="submit">Create Account</button>
+      </form>
+      <p>Already registered? <a href="#" id="switch-to-login">Login</a></p>
+    </div>
+  </div>
+
+  <div id="chat" class="chat-container" style="display: none;">
+    <div class="chat-header">
+      <h1>Nest Chat</h1>
+      <div id="online-users"></div>
+      <button id="logout">Logout</button>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="chat-input">
+      <button type="button" id="attach-btn">+</button>
+      <button type="button" id="record-btn">🎤</button>
+      <input type="text" id="message-input" placeholder="Type a message...">
+      <button type="button" id="emoji-btn">😊</button>
+      <button type="submit" id="send-btn">Send</button>
+    </div>
+    <input type="file" id="file-input" style="display: none;">
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
