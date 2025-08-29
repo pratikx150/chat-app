@@ -28,18 +28,19 @@ export default async function handler(req, res) {
     } else if (req.method === 'POST') {
       const form = new formidable.IncomingForm();
       form.parse(req, async (err, fields, files) => {
-        if (err) return res.status(500).json({ error: 'Error parsing form' });
+        if (err) return res.status(500).json({ error: `Form parsing error: ${err.message}` });
 
         let type = 'text';
         let content;
 
         if (fields.text) {
           content = fields.text[0];
+          type = 'text';
         } else if (files.file) {
           const file = files.file[0];
-          const mimetype = file.mimetype;
-          const base64 = (await fs.readFile(file.filepath)).toString('base64');
-          content = `data:${mimetype};base64,${base64}`;
+          const mimetype = file.mimetype || 'application/octet-stream';
+          const buffer = await fs.readFile(file.filepath);
+          content = `data:${mimetype};base64,${buffer.toString('base64')}`;
           if (mimetype.startsWith('image/')) type = 'image';
           else if (mimetype.startsWith('audio/')) type = 'audio';
           else type = 'file';
@@ -48,7 +49,10 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Missing text or file' });
         }
 
-        await client.query('INSERT INTO messages (username, type, content) VALUES ($1, $2, $3)', [decoded.username, type, content]);
+        await client.query(
+          'INSERT INTO messages (username, type, content) VALUES ($1, $2, $3)',
+          [decoded.username, type, content]
+        );
         res.status(200).json({ message: 'Sent successfully' });
       });
     } else {
