@@ -1,51 +1,171 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-default">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nest</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Nest Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Custom styles using Tailwind variables */
+    .bg-primary { background-color: var(--bg-primary); }
+    .bg-secondary { background-color: var(--bg-secondary); }
+    .bg-tertiary { background-color: var(--bg-tertiary); }
+    .bg-quaternary { background-color: var(--bg-quaternary); }
+    .bg-hover { background-color: var(--bg-hover); }
+    .text-primary { color: var(--text-primary); }
+    .text-secondary { color: var(--text-secondary); }
+    .text-muted { color: var(--text-muted); }
+    .text-placeholder { color: var(--text-placeholder); }
+    .text-inverted { color: var(--text-inverted); }
+    .text-on-accent { color: var(--text-on-accent); }
+    .accent-primary { background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-hover)); }
+    .accent-primary-hover { background: linear-gradient(135deg, var(--accent-primary-hover), var(--accent-primary)); }
+    .accent-secondary { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-secondary-hover)); }
+    .border-primary { border-color: var(--border-primary); }
+    .border-secondary { border-color: var(--border-secondary); }
+    .border-focus { border-color: var(--border-focus); }
+    .button-danger { background-color: var(--button-danger-bg); color: var(--button-danger-text); }
+    .button-danger:hover { background-color: var(--button-danger-hover-bg); }
+    .input-bg { background-color: var(--input-bg); }
+    .input-border { border-color: var(--input-border); }
+    .input-text { color: var(--input-text); }
+    .input-focus-ring { box-shadow: 0 0 0 3px var(--input-focus-ring); }
+    .input-disabled { background-color: var(--input-disabled-bg); border-color: var(--input-disabled-border); color: var(--input-disabled-text); }
+    .link-text { color: var(--link-text); }
+    .link-hover-text:hover { color: var(--link-hover-text); }
+    .online-dot { background-color: var(--online-dot); }
+    .nest-gradient { background: linear-gradient(to right, var(--nest-gradient-from), var(--nest-gradient-to)); background-clip: text; -webkit-background-clip: text; color: transparent; }
+    .message-sent { background: linear-gradient(to right, var(--message-sent-bg-from), var(--message-sent-bg-to)); color: var(--message-sent-text); }
+    .message-received { background-color: var(--message-received-bg); color: var(--message-received-text); }
+    .scrollbar-thumb { background-color: var(--scrollbar-thumb); }
+    .scrollbar-thumb-hover:hover { background-color: var(--scrollbar-thumb-hover); }
+    .highlight-bg { background-color: var(--highlight-bg); }
+    .highlight-shadow { box-shadow: 0 0 10px var(--highlight-shadow); }
+
+    /* Heart particle animation */
+    .heart-shower {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .heart-particle {
+      position: absolute;
+      top: -50px;
+      font-size: 1.5rem;
+      animation: floatHeart 2s ease-out forwards;
+    }
+    @keyframes floatHeart {
+      0% { transform: translate(var(--tx), 0) rotate(0deg); opacity: 1; }
+      100% { transform: translate(var(--tx), calc(100vh + 100px)) rotate(var(--rot)); opacity: 0; }
+    }
+
+    /* Custom scrollbar */
+    .overflow-y-auto {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+    .overflow-y-auto::-webkit-scrollbar {
+      width: 8px;
+    }
+    .overflow-y-auto::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .overflow-y-auto::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 4px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+
+    /* Animation classes */
+    .animate-highlight { animation: highlight 3s ease-in-out; border-radius: 0.75rem; }
+    @keyframes highlight {
+      0% { background-color: transparent; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); transform: translateY(0) scale(1); }
+      25% { background-color: rgba(255, 255, 255, 0.1); box-shadow: 0 0 20px 8px rgba(255, 255, 255, 0.6); transform: translateY(-8px) scale(1.02); }
+      50% { background-color: rgba(255, 255, 255, 0.15); box-shadow: 0 0 25px 10px rgba(255, 255, 255, 0.8); transform: translateY(-4px) scale(1.01); }
+      75% { background-color: rgba(255, 255, 255, 0.08); box-shadow: 0 0 15px 6px rgba(255, 255, 255, 0.4); transform: translateY(-2px) scale(1.005); }
+      100% { background-color: transparent; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); transform: translateY(0) scale(1); }
+    }
+    .message-animate-in { animation: slideInUp 0.3s ease-out forwards; }
+    @keyframes slideInUp {
+      from { opacity: 0.3; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .online-dot-pulse { animation: pulseDot 1.8s infinite cubic-bezier(0.66, 0, 0, 1); }
+    @keyframes pulseDot {
+      0%, 100% { box-shadow: 0 0 0 0px color-mix(in srgb, var(--online-dot) 60%, transparent); }
+      50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--online-dot) 0%, transparent); }
+    }
+    .typing-indicator span { animation: typingDots 1.4s infinite ease-in-out both; }
+    @keyframes typingDots {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+      40% { transform: scale(1.0); opacity: 1; }
+    }
+    .animated-nest-title { animation: gradientShift 4s ease infinite; background-size: 200% 200%; }
+    @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .button-primary::after, .button-interactive::after { animation: ripple 0.3s forwards; }
+    @keyframes ripple {
+      0% { width: 0; height: 0; }
+      100% { width: 300px; height: 300px; }
+    }
+    .recording-button { animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+    }
+  </style>
 </head>
-<body>
-  <div id="login" class="auth-container">
-    <div class="auth-box">
-      <h2>Welcome to Nest</h2>
-      <form id="login-form">
-        <input type="text" id="login-username" placeholder="Username" required>
-        <input type="password" id="login-password" placeholder="Password" required>
-        <button type="submit">Enter Nest</button>
+<body class="bg-primary font-inter touch-manipulation">
+  <div id="login" class="auth-container opacity-0 transition-opacity duration-500">
+    <div class="auth-box bg-secondary/70 p-6 rounded-xl shadow-lg text-center w-80">
+      <h2 class="animated-nest-title text-2xl mb-6 nest-gradient">Welcome to Nest</h2>
+      <form id="login-form" class="space-y-4">
+        <input type="text" id="login-username" placeholder="Username" required class="input-styled w-full px-4 py-3 rounded-lg focus:input-focus-ring">
+        <input type="password" id="login-password" placeholder="Password" required class="input-styled w-full px-4 py-3 rounded-lg focus:input-focus-ring">
+        <button type="submit" class="button-primary w-full py-3 rounded-lg">Enter Nest</button>
       </form>
-      <p>New here? <a href="#" id="switch-to-register">Register</a></p>
+      <p class="mt-4 text-sm"><a href="#" id="switch-to-register" class="link-text hover:link-hover-text">New here? Register</a></p>
     </div>
   </div>
 
-  <div id="register" class="auth-container" style="display: none;">
-    <div class="auth-box">
-      <h2>Create Your Nest</h2>
-      <form id="register-form">
-        <input type="text" id="register-username" placeholder="Username" required>
-        <input type="password" id="register-password" placeholder="Password" required>
-        <button type="submit">Register</button>
+  <div id="register" class="auth-container opacity-0 transition-opacity duration-500 hidden">
+    <div class="auth-box bg-secondary/70 p-6 rounded-xl shadow-lg text-center w-80">
+      <h2 class="animated-nest-title text-2xl mb-6 nest-gradient">Create Your Nest</h2>
+      <form id="register-form" class="space-y-4">
+        <input type="text" id="register-username" placeholder="Username" required class="input-styled w-full px-4 py-3 rounded-lg focus:input-focus-ring">
+        <input type="password" id="register-password" placeholder="Password" required class="input-styled w-full px-4 py-3 rounded-lg focus:input-focus-ring">
+        <button type="submit" class="button-primary w-full py-3 rounded-lg">Register</button>
       </form>
-      <p>Already a member? <a href="#" id="switch-to-login">Login</a></p>
+      <p class="mt-4 text-sm"><a href="#" id="switch-to-login" class="link-text hover:link-hover-text">Already a member? Login</a></p>
     </div>
   </div>
 
-  <div id="chat" class="chat-container" style="display: none;">
-    <div class="chat-header">
-      <h2>Nest</h2>
-      <div id="online-users">Online: </div>
-      <button id="logout">Logout</button>
+  <div id="chat" class="chat-container hidden flex-col h-screen">
+    <div class="chat-header flex justify-between items-center p-4 bg-gradient-to-r from-[var(--nest-gradient-from)] to-[var(--nest-gradient-to)] border-b border-[var(--border-primary)]">
+      <h2 class="animated-nest-title text-xl">Nest</h2>
+      <div id="online-users" class="text-sm text-[var(--accent-secondary)]"></div>
+      <button id="logout" class="button-danger px-4 py-2 rounded-lg">Logout</button>
     </div>
-    <div class="messages" id="messages"></div>
-    <div class="message-input">
-      <button type="button" id="attach-btn">+</button>
-      <button type="button" id="record-btn">🎤</button>
-      <input type="text" id="message-input" placeholder="Type a message...">
-      <button type="button" id="emoji-btn">😄</button>
-      <button type="submit" id="send-btn">➤</button>
+    <div class="messages flex-1 overflow-y-auto p-4 space-y-2" id="messages"></div>
+    <div class="message-input flex items-center p-4 bg-[var(--bg-secondary)] border-t border-[var(--border-primary)]">
+      <button type="button" id="attach-btn" class="button-interactive w-10 h-10 rounded-lg accent-primary flex items-center justify-center mr-2">+</button>
+      <button type="button" id="record-btn" class="button-interactive w-10 h-10 rounded-lg accent-primary flex items-center justify-center mr-2">🎤</button>
+      <input type="text" id="message-input" placeholder="Type a message..." class="input-styled flex-1 mr-2">
+      <button type="button" id="emoji-btn" class="button-interactive w-10 h-10 rounded-lg accent-primary flex items-center justify-center mr-2">😄</button>
+      <button type="submit" id="send-btn" class="send-button w-10 h-10 rounded-lg flex items-center justify-center">➤</button>
     </div>
     <input type="file" id="file-input" style="display: none;">
+    <div class="heart-shower" id="heart-shower"></div>
   </div>
 
   <script src="script.js"></script>
