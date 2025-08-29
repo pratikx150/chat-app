@@ -1,35 +1,10 @@
-const crypto = require('crypto');
-const { Pool } = require('@neondatabase/serverless');
+const { query } = require('./db');
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+module.exports = async (req, res) => {
+  if (req.method === 'GET') {
+    const notifications = await query('SELECT * FROM notifications WHERE is_active = true');
+    res.json(notifications.rows);
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
   }
-
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Missing fields' });
-  }
-
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  const password_hash = `${salt}:${hash}`;
-
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-  try {
-    const client = await pool.connect();
-    await client.query('INSERT INTO users (username, password_hash) VALUES ($1, $2)', [username, password_hash]);
-    client.release();
-    res.status(200).json({ message: 'Registered' });
-  } catch (err) {
-    if (err.code === '23505') { // Unique violation
-      res.status(409).json({ error: 'Username taken' });
-    } else {
-      res.status(500).json({ error: err.message });
-    }
-  } finally {
-    await pool.end();
-  }
-}
+};
