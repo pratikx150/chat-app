@@ -1,20 +1,33 @@
-const { query } = require('./db');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const { Pool } = require('@neondatabase/serverless');
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
   const { username, password } = req.body;
-  if (!username) return res.status(400).json({ error: 'Username required' });
 
-  // Dummy password check (replace with proper auth)
-  const correctPassword = new Date().getHours().toString().padStart(2, '0') + new Date().getMinutes().toString().padStart(2, '0');
-  if (password !== correctPassword) return res.status(401).json({ error: 'Incorrect password' });
+  if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
 
-  // Check if user exists, create if not
-  let user = await query('SELECT * FROM users WHERE username = $1', [username]);
-  if (user.rows.length === 0) {
-    user = await query('INSERT INTO users (username, is_online) VALUES ($1, true) RETURNING *', [username]);
-  } else {
-    await query('UPDATE users SET is_online = true WHERE username = $1', [username]);
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT password_hash FROM users WHERE username = $1', [username]);
+    client.release();
+
+    if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid username' });
+
+    const [salt, storedHash] = result.rows[0].password_hash.split(':');
+    const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+
+    if (hash !== storedHash) return res.status(401).json({ error: 'Invalid password' });
+
+    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.status(200).json({ token, username });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    await pool.end();
   }
-  res.json({ status: 'success', username: user.rows[0].username, isMuted: user.rows[0].is_muted });
-};
+}
