@@ -38,11 +38,15 @@ wss.on('connection', (ws, req) => {
         client = await pool.connect();
         await client.query(
           'INSERT INTO messages (username, type, content, timestamp) VALUES ($1, $2, $3, $4)',
-          [data.username, data.type || 'text', data.content, data.timestamp]
+          [data.username, data.type || 'text', data.content, data.timestamp || new Date().toISOString()]
         );
-        broadcast(data);
+        const result = await client.query(
+          'SELECT * FROM messages WHERE id = currval(\'messages_id_seq\')'
+        );
+        broadcast({ ...result.rows[0], type: 'message' });
       } catch (err) {
         console.error('Message save error:', err);
+        ws.send(JSON.stringify({ type: 'error', message: err.message }));
       } finally {
         if (client) client.release();
       }
@@ -57,6 +61,10 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     clients.delete(ws);
     broadcast({ type: 'online', users: Array.from(clients.values()) });
+  });
+
+  ws.on('error', (err) => {
+    console.error('WebSocket error:', err);
   });
 });
 
