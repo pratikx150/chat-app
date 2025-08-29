@@ -88,8 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   sendBtn.addEventListener('click', async () => {
     const text = messageInput.value.trim();
-    if (!text) return;
-    await sendMessage(text);
+    if (text) await sendMessage(text);
     messageInput.value = '';
   });
 
@@ -116,10 +115,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   attachBtn.addEventListener('click', () => fileInput.click());
 
-  fileInput.addEventListener('change', () => {
+  fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (file) {
-      sendFile(file);
+      await sendFile(file);
       fileInput.value = '';
     }
   });
@@ -131,9 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
         recorder = new MediaRecorder(stream);
         const chunks = [];
         recorder.ondataavailable = (e) => chunks.push(e.data);
-        recorder.onstop = () => {
+        recorder.onstop = async () => {
           const blob = new Blob(chunks, { type: 'audio/webm' });
-          sendFile(blob, 'voice.webm');
+          await sendFile(blob, 'voice.webm');
           chunks.length = 0;
           recorder = null;
           stream.getTracks().forEach(track => track.stop());
@@ -197,7 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const res = await fetch('/api/messages', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      },
       body: formData
     });
 
@@ -244,7 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res.ok) {
       const { online, typing } = await res.json();
       onlineUsers.textContent = `Online: ${online.join(', ') || 'None'}`;
-      // Add typing indicator if desired
+    } else {
+      console.error('Fetch status error:', await res.json());
     }
   }
 
