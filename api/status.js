@@ -3,9 +3,10 @@ const { Pool } = require('@neondatabase/serverless');
 
 export default async function handler(req, res) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  let client;
 
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
 
     if (req.method === 'GET') {
       const onlineResult = await client.query("SELECT username FROM users WHERE last_active > NOW() - INTERVAL '5 minutes'");
@@ -42,11 +43,11 @@ export default async function handler(req, res) {
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
-
-    client.release();
   } catch (err) {
+    console.error('Status error:', err);
     res.status(500).json({ error: err.message });
   } finally {
+    if (client) client.release();
     await pool.end();
   }
 }
