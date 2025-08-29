@@ -7,7 +7,77 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Custom styles using Tailwind variables */
+    :root, .theme-default {
+  --bg-primary: #0b0c10;           /* Void black */
+  --bg-secondary: #161a1d;         /* Charcoal nebula */
+  --bg-tertiary: #1f2329;          /* Smooth gradient base */
+  --bg-quaternary: #2a2f38;        /* Low contrast hover */
+  --bg-hover: #3c3f4a;             /* Hover contrast */
+
+  --text-primary: #e6e6f0;         /* Pale platinum */
+  --text-secondary: #cfcfe5;       /* Dim steel */
+  --text-muted: #9b9bb0;           /* Faint lavender grey */
+  --text-placeholder: #7e7e93;     /* Ghost grey */
+  --text-inverted: #0b0c10;
+  --text-on-accent: #0b0c10;
+
+  --accent-primary: #ff6a00;       /* Solar flare orange */
+  --accent-primary-hover: #e55c00;
+  --accent-secondary: #c084fc;     /* Electric violet */
+  --accent-secondary-hover: #a855f7;
+
+  --border-primary: #2f3542;
+  --border-secondary: #3b4252;
+  --border-focus: #ff6a00;
+
+  --button-danger-bg: #ff3b30; 
+  --button-danger-hover-bg: #d92b20;
+  --button-danger-text: #ffffff;
+
+  --input-bg: #1f2329;
+  --input-border: #3b4252;
+  --input-text: #f1f1f7;
+  --input-focus-ring: rgba(255, 106, 0, 0.4);
+  --input-disabled-bg: #2a2f38;
+  --input-disabled-border: #3c3f4a;
+  --input-disabled-text: #9b9bb0;
+  --input-muted-placeholder: #ff3b30;
+  --input-muted-border: #d92b20;
+  --input-muted-ring: rgba(255, 59, 48, 0.4);
+
+  --link-text: #ffd93b; /* Dandelion yellow */
+  --link-hover-text: #ffae00;
+
+  --online-dot: #4efc82;  
+  --unread-dot-color: #ff3b30;
+  --typing-dot-bg: #c084fc;
+
+  --nest-gradient-from: #ff6a00;
+  --nest-gradient-to: #c084fc;
+
+  --message-sent-bg-from: #ff6a00;
+  --message-sent-bg-to: #e55c00;
+  --message-sent-text: #0b0c10;
+
+  --message-received-bg: #1f2329;
+  --message-received-text: #e6e6f0;
+
+  --message-reply-bg: rgba(255, 255, 255, 0.02);
+  --message-reply-hover-bg: rgba(255, 255, 255, 0.05);
+  --message-reply-user-text: #9b9bb0;
+
+  --scrollbar-thumb: rgba(255, 106, 0, 0.4);
+  --scrollbar-thumb-hover: rgba(255, 106, 0, 0.7);
+
+  --highlight-bg: rgba(255, 106, 0, 0.1);
+  --highlight-shadow: rgba(255, 106, 0, 0.3);
+
+  --error-text: #ff3b30;
+  --warning-text: #ffc107;
+  --success-text: #4efc82;
+  --info-text: #84c5ff;
+}
+
     .bg-primary { background-color: var(--bg-primary); }
     .bg-secondary { background-color: var(--bg-secondary); }
     .bg-tertiary { background-color: var(--bg-tertiary); }
