@@ -4,7 +4,8 @@
   "dependencies": {
     "@neondatabase/serverless": "^0.9.4",
     "jsonwebtoken": "^9.0.2",
-    "formidable": "^3.5.1"
+    "formidable": "^3.5.1",
+    "ws": "^8.17.1"
   },
   "engines": {
     "node": ">=18"
