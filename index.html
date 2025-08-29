@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dark Chat</title>
+  <title>Nest Chat</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,13 +29,21 @@
     </div>
 
     <div id="chat" style="display: none;">
-      <h2>Chat Room</h2>
+      <div id="header">
+        <h2>Nest</h2>
+        <div id="online-users">Online: </div>
+        <button id="logout">Logout</button>
+      </div>
       <div id="messages"></div>
+      <div id="typing-indicator"></div>
       <form id="message-form">
-        <input type="text" id="message-input" placeholder="Type a message..." required>
-        <button type="submit">Send</button>
+        <button type="button" id="attach-btn">+</button>
+        <button type="button" id="record-btn">🎤</button>
+        <input type="text" id="message-input" placeholder="Type a message...">
+        <button type="button" id="emoji-btn">😀</button>
+        <button type="submit">➤</button>
       </form>
-      <button id="logout">Logout</button>
+      <input type="file" id="file-input" style="display: none;">
     </div>
   </div>
 
