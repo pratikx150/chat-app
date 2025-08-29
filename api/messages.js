@@ -51,7 +51,7 @@ export default async function handler(req, res) {
           } else {
             type = 'file';
           }
-          await fs.unlink(file.filepath); // Clean up temp file
+          await fs.unlink(file.filepath);
         } else {
           return res.status(400).json({ error: 'Missing text or file' });
         }
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
         await client.query('INSERT INTO messages (username, type, content) VALUES ($1, $2, $3)', [decoded.username, type, content]);
         res.status(200).json({ message: 'Sent' });
       });
-      return; // Parse is async, so return here
+      return;
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
