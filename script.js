@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input');
   const emojiBtn = document.getElementById('emoji-btn');
 
-  let ws, currentUser;
+  let ws, currentUser, pollInterval;
 
   loginDiv.classList.add('active');
 
@@ -114,7 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   recordBtn.addEventListener('click', async () => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      alert('WebSocket not connected. Using fallback.');
+      const file = await recordAudio();
+      if (file) await sendFile(file, 'voice.webm');
+      return;
+    }
 
     if (!recorder) {
       try {
@@ -146,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ws.send(JSON.stringify({ type: 'logout', username: currentUser }));
       ws.close();
     }
+    clearInterval(pollInterval);
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     chatDiv.style.display = 'none';
@@ -154,13 +160,79 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   async function sendMessage(text) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
-    ws.send(JSON.stringify({ type: 'message', username: currentUser, content: text, timestamp: new Date().toISOString() }));
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'message', username: currentUser, content: text, timestamp: new Date().toISOString() }));
+    } else {
+      await fallbackSendMessage(text);
+    }
   }
 
   async function sendFile(file, filename = file.name) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const formData = new FormData();
+      formData.append('file', file, filename);
 
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        ws.send(JSON.stringify({ type: 'message', ...data.message, username: currentUser }));
+      } else {
+        const error = await res.json();
+        alert(`File upload failed: ${error.error || 'Unknown error'}`);
+        console.error('File upload error:', error);
+      }
+    } else {
+      await fallbackSendFile(file, filename);
+    }
+  }
+
+  async function recordAudio() {
+    return new Promise((resolve) => {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          const recorder = new MediaRecorder(stream);
+          const chunks = [];
+          recorder.ondataavailable = (e) => chunks.push(e.data);
+          recorder.onstop = () => {
+            stream.getTracks().forEach(track => track.stop());
+            resolve(new Blob(chunks, { type: 'audio/webm' }));
+          };
+          recorder.start();
+          setTimeout(() => recorder.stop(), 5000); // 5-second recording
+        })
+        .catch(err => {
+          console.error('Recording error:', err);
+          resolve(null);
+        });
+    });
+  }
+
+  async function fallbackSendMessage(text) {
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ text })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      displayMessage(data.message);
+    } else {
+      const error = await res.json();
+      alert(`Message failed: ${error.error || 'Unknown error'}`);
+      console.error('Message error:', error);
+    }
+  }
+
+  async function fallbackSendFile(file, filename) {
     const formData = new FormData();
     formData.append('file', file, filename);
 
@@ -172,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (res.ok) {
       const data = await res.json();
-      ws.send(JSON.stringify({ type: 'message', ...data.message, username: currentUser }));
+      displayMessage(data.message);
     } else {
       const error = await res.json();
       alert(`File upload failed: ${error.error || 'Unknown error'}`);
@@ -193,8 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
     registerDiv.style.display = 'none';
     chatDiv.style.display = 'flex';
 
-    ws = new WebSocket('wss://your-vercel-url/api/ws');
+    const token = localStorage.getItem('token');
+    ws = new WebSocket(`wss://your-vercel-url/api/ws?token=${encodeURIComponent(token)}`);
     ws.onopen = () => {
+      console.log('WebSocket connected');
       ws.send(JSON.stringify({ type: 'join', username: currentUser }));
       fetchInitialMessages();
     };
@@ -209,10 +283,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
     ws.onclose = () => {
-      console.log('WebSocket disconnected');
+      console.log('WebSocket disconnected. Switching to polling.');
+      startPolling();
     };
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
+      alert('WebSocket failed. Using polling as fallback.');
+      startPolling();
     };
   }
 
@@ -240,6 +317,23 @@ document.addEventListener('DOMContentLoaded', () => {
     div.innerHTML = contentHtml + `<div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function startPolling() {
+    clearInterval(pollInterval);
+    pollInterval = setInterval(() => {
+      fetch('/api/messages')
+        .then(res => res.ok ? res.json() : Promise.reject(res))
+        .then(messages => {
+          const lastMessageId = messages[messages.length - 1]?.id || 0;
+          messages.forEach(msg => {
+            if (!messagesDiv.querySelector(`[data-id="${msg.id}"]`)) {
+              displayMessage(msg);
+            }
+          });
+        })
+        .catch(err => console.error('Polling error:', err));
+    }, 5000);
   }
 
   if (localStorage.getItem('token')) {
