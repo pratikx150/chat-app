@@ -51,10 +51,13 @@ export default async function handler(req, res) {
       }
 
       await client.query(
-        'INSERT INTO messages (username, type, content) VALUES ($1, $2, $3)',
-        [decoded.username, type, content]
+        'INSERT INTO messages (username, type, content, timestamp) VALUES ($1, $2, $3, $4)',
+        [decoded.username, type, content, new Date().toISOString()]
       );
-      res.status(200).json({ message: 'Sent successfully' });
+      const result = await client.query(
+        'SELECT * FROM messages WHERE id = currval(\'messages_id_seq\')'
+      );
+      res.status(200).json({ message: result.rows[0] });
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
