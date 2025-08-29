@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatDiv = document.getElementById('chat');
   const messagesDiv = document.getElementById('messages');
   const onlineUsers = document.getElementById('online-users');
+  const heartShower = document.getElementById('heart-shower');
 
   const loginForm = document.getElementById('login-form');
   const registerForm = document.getElementById('register-form');
@@ -25,20 +26,26 @@ document.addEventListener('DOMContentLoaded', () => {
   let typingTimeout;
   let recorder, stream;
 
-  loginDiv.classList.add('active');
+  loginDiv.classList.add('active', 'opacity-100');
 
   switchToRegister.addEventListener('click', (e) => {
     e.preventDefault();
-    loginDiv.style.display = 'none';
-    registerDiv.style.display = 'block';
-    setTimeout(() => registerDiv.classList.add('active'), 10);
+    loginDiv.classList.remove('opacity-100');
+    setTimeout(() => {
+      loginDiv.style.display = 'none';
+      registerDiv.style.display = 'block';
+      registerDiv.classList.add('opacity-100');
+    }, 500);
   });
 
   switchToLogin.addEventListener('click', (e) => {
     e.preventDefault();
-    registerDiv.style.display = 'none';
-    loginDiv.style.display = 'block';
-    setTimeout(() => loginDiv.classList.add('active'), 10);
+    registerDiv.classList.remove('opacity-100');
+    setTimeout(() => {
+      registerDiv.style.display = 'none';
+      loginDiv.style.display = 'block';
+      loginDiv.classList.add('opacity-100');
+    }, 500);
   });
 
   registerForm.addEventListener('submit', async (e) => {
@@ -148,10 +155,10 @@ document.addEventListener('DOMContentLoaded', () => {
           chunks = [];
           recorder = null;
           stream.getTracks().forEach((track) => track.stop());
-          recordBtn.textContent = '🎤';
+          recordBtn.classList.remove('recording-button');
         };
         recorder.start();
-        recordBtn.textContent = '⏹';
+        recordBtn.classList.add('recording-button');
       } catch (err) {
         alert('Error accessing microphone');
       }
@@ -184,9 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem('username');
     clearInterval(pollInterval);
     clearInterval(statusInterval);
-    chatDiv.style.display = 'none';
-    loginDiv.style.display = 'block';
-    setTimeout(() => loginDiv.classList.add('active'), 10);
+    chatDiv.classList.add('hidden');
+    loginDiv.classList.remove('hidden');
+    setTimeout(() => loginDiv.classList.add('opacity-100'), 10);
   });
 
   async function fetchMessages() {
@@ -197,21 +204,25 @@ document.addEventListener('DOMContentLoaded', () => {
       messages.forEach(msg => {
         const isSelf = msg.username === currentUser;
         const div = document.createElement('div');
-        div.classList.add('message', isSelf ? 'self' : '');
+        div.classList.add('message-container', 'message-animate-in');
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', isSelf ? 'message-sent' : 'message-received', 'p-3', 'rounded-xl', 'max-w-[60%]');
         let contentHtml = '';
         if (msg.type === 'text') {
           contentHtml = msg.content;
         } else if (msg.type === 'image') {
-          contentHtml = `<img src="${msg.content}" alt="image" style="max-width:100%; border-radius:8px;">`;
+          contentHtml = `<img src="${msg.content}" alt="image" class="rounded-lg max-w-full">`;
         } else if (msg.type === 'audio') {
-          contentHtml = `<audio src="${msg.content}" controls></audio>`;
+          contentHtml = `<audio src="${msg.content}" controls class="w-full"></audio>`;
         } else {
-          contentHtml = `<a href="${msg.content}" download>Download file</a>`;
+          contentHtml = `<a href="${msg.content}" download class="link-text hover:link-hover-text">Download file</a>`;
         }
-        div.innerHTML = contentHtml + `<div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+        messageDiv.innerHTML = contentHtml + `<div class="text-xs text-muted mt-1">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+        div.appendChild(messageDiv);
         messagesDiv.appendChild(div);
       });
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      showHeart();
     }
   }
 
@@ -220,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res.ok) {
       const { online, typing } = await res.json();
       onlineUsers.textContent = `Online: ${online.join(', ') || 'None'}`;
+      // Add typing indicator if needed
     }
   }
 
@@ -241,9 +253,13 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('User not found. Please login again.');
       return;
     }
-    loginDiv.style.display = 'none';
-    registerDiv.style.display = 'none';
-    chatDiv.style.display = 'flex';
+    loginDiv.classList.remove('opacity-100');
+    registerDiv.classList.remove('opacity-100');
+    setTimeout(() => {
+      loginDiv.classList.add('hidden');
+      registerDiv.classList.add('hidden');
+      chatDiv.classList.remove('hidden');
+    }, 500);
     fetchMessages();
     fetchStatus();
     sendStatus('update_active');
@@ -252,6 +268,16 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchStatus();
       sendStatus('update_active');
     }, 10000);
+  }
+
+  function showHeart() {
+    const heart = document.createElement('div');
+    heart.classList.add('heart-particle');
+    heart.innerHTML = '❤️';
+    heart.style.setProperty('--tx', `${Math.random() * 100 - 50}vw`);
+    heart.style.setProperty('--rot', `${Math.random() * 360}deg`);
+    heartShower.appendChild(heart);
+    setTimeout(() => heart.remove(), 2000);
   }
 
   if (localStorage.getItem('token')) {
