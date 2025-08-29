@@ -72,12 +72,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (res.ok) {
-      const { token, username: user } = await res.json();
-      localStorage.setItem('token', token);
-      localStorage.setItem('username', user);
+      const data = await res.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.username);
       showChat();
     } else {
-      alert('Error: ' + (await res.json()).error);
+      const errorData = await res.json();
+      alert(`Login failed: ${errorData.error || 'Unknown error'}`);
+      console.error('Login error:', errorData);
     }
   });
 
@@ -218,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res.ok) {
       const { online, typing } = await res.json();
       onlineUsers.textContent = `Online: ${online.join(', ') || 'None'}`;
-      // Typing indicator can be added above input if desired
     }
   }
 
@@ -235,7 +236,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showChat() {
-    currentUser = localStorage.getElementById('username').value;
+    currentUser = localStorage.getItem('username');
+    if (!currentUser) {
+      alert('User not found. Please login again.');
+      return;
+    }
     loginDiv.style.display = 'none';
     registerDiv.style.display = 'none';
     chatDiv.style.display = 'flex';
