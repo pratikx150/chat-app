@@ -33,7 +33,9 @@ export default async function handler(req, res) {
 
     const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(200).json({ token, username });
+    console.log(`User ${username} logged in successfully at ${new Date().toISOString()}`);
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ error: err.message });
   } finally {
     await pool.end();
