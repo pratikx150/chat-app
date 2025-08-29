@@ -1,3 +1,5 @@
+console.log('script.js loaded successfully'); // Debug log to confirm file loading
+
 const DEFAULT_FAVICON = "/public/favicon.svg";
 const UNREAD_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%23ff0000'/%3E%3Ctext x='8' y='12' text-anchor='middle' fill='white' font-size='10' font-family='Inter, sans-serif'%3E!%3C/text%3E%3C/svg%3E";
 const DEFAULT_TITLE = "Nest";
@@ -62,6 +64,7 @@ const API_BASE = '/api';
 // Helper Functions
 function changeFavicon(href) {
   try {
+    console.log('Attempting to change favicon to:', href); // Debug log
     if (favicon) {
       favicon.href = href;
       document.title = showUnreadInTitle ? UNREAD_TITLE : DEFAULT_TITLE;
@@ -461,6 +464,7 @@ async function capturePhoto() {
 // Render Functions
 function renderApp() {
   try {
+    console.log('Rendering app, username:', username); // Debug log
     if (!app) {
       console.error('App container not found');
       document.body.innerHTML = '<div class="p-4 text-red-500">Error: App container not found. Please check index.html.</div>';
@@ -484,7 +488,7 @@ function renderLogin() {
     const container = document.createElement('div');
     container.className = 'login-container flex flex-col items-center justify-center min-h-screen p-4';
     container.innerHTML = `
-      <form class="login-form w-full max-w-sm bg-[var(--bg-secondary)] p-6 rounded-lg shadow-lg">
+      <form id="loginForm" class="login-form w-full max-w-sm bg-[var(--bg-secondary)] p-6 rounded-lg shadow-lg">
         <h1 class="login-title text-2xl font-bold mb-4 text-center">Welcome to Nest</h1>
         <input type="text" id="usernameInput" placeholder="Enter your username" class="input-styled w-full mb-4">
         <input type="password" id="passwordInput" placeholder="Enter password" class="input-styled w-full mb-4">
@@ -1045,6 +1049,7 @@ document.addEventListener('click', (e) => {
 
 // Initial Render
 try {
+  console.log('Starting initial render'); // Debug log
   renderApp();
   if (username) {
     fetchData();
@@ -1058,10 +1063,7 @@ try {
 
 // Post-Initialization Setup
 try {
-  // Log successful initialization for debugging
   console.log('App initialized successfully. Username:', username || 'Not logged in');
-  
-  // Handle window visibility changes to update unread notifications
   document.addEventListener('visibilitychange', () => {
     try {
       if (!document.hidden && showUnreadInTitle) {
@@ -1074,8 +1076,6 @@ try {
       console.error('Visibility change handler error:', error);
     }
   });
-
-  // Clean up intervals on window unload to prevent memory leaks
   window.addEventListener('unload', () => {
     try {
       if (username) {
