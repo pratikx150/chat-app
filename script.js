@@ -3,12 +3,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const registerDiv = document.getElementById('register');
   const chatDiv = document.getElementById('chat');
   const messagesDiv = document.getElementById('messages');
-  const typingIndicator = document.getElementById('typing-indicator');
   const onlineUsers = document.getElementById('online-users');
 
   const loginForm = document.getElementById('login-form');
   const registerForm = document.getElementById('register-form');
-  const messageForm = document.getElementById('message-form');
+  const messageInput = document.getElementById('message-input');
+  const sendBtn = document.getElementById('send-btn');
 
   const switchToRegister = document.getElementById('switch-to-register');
   const switchToLogin = document.getElementById('switch-to-login');
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const attachBtn = document.getElementById('attach-btn');
   const recordBtn = document.getElementById('record-btn');
   const fileInput = document.getElementById('file-input');
-  const emojiBtn = document.getElementById('emoji-btn'); // Placeholder
+  const emojiBtn = document.getElementById('emoji-btn');
 
   let pollInterval, statusInterval;
   let currentUser;
@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let typingTimeout;
   let recorder, stream;
 
-  // Show login by default
   loginDiv.classList.add('active');
 
   switchToRegister.addEventListener('click', (e) => {
@@ -82,9 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  messageForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const text = document.getElementById('message-input').value.trim();
+  sendBtn.addEventListener('click', async () => {
+    const text = messageInput.value.trim();
     if (!text) return;
     const token = localStorage.getItem('token');
 
@@ -98,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (res.ok) {
-      document.getElementById('message-input').value = '';
+      messageInput.value = '';
       fetchMessages();
       sendStatus('update_active');
       if (isTyping) {
@@ -111,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('message-input').addEventListener('input', () => {
+  messageInput.addEventListener('input', () => {
     if (!isTyping) {
       isTyping = true;
       sendStatus('start_typing');
@@ -197,22 +195,16 @@ document.addEventListener('DOMContentLoaded', () => {
       messages.forEach(msg => {
         const isSelf = msg.username === currentUser;
         const div = document.createElement('div');
-        div.classList.add('message', isSelf ? 'right' : 'left');
+        div.classList.add('message', isSelf ? 'self' : '');
         let contentHtml = '';
         if (msg.type === 'text') {
-          contentHtml = `<span>${msg.content}</span>`;
+          contentHtml = msg.content;
         } else if (msg.type === 'image') {
           contentHtml = `<img src="${msg.content}" alt="image" style="max-width:100%; border-radius:8px;">`;
         } else if (msg.type === 'audio') {
           contentHtml = `<audio src="${msg.content}" controls></audio>`;
         } else {
           contentHtml = `<a href="${msg.content}" download>Download file</a>`;
-        }
-        if (!isSelf) {
-          contentHtml = `<img class="avatar" src="https://ui-avatars.com/api/?name=${msg.username}&background=333&color=fff">
-            <div class="content">${contentHtml}</div>`;
-        } else {
-          contentHtml = `<div class="content">${contentHtml}</div>`;
         }
         div.innerHTML = contentHtml + `<div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
         messagesDiv.appendChild(div);
@@ -226,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res.ok) {
       const { online, typing } = await res.json();
       onlineUsers.textContent = `Online: ${online.join(', ') || 'None'}`;
-      typingIndicator.textContent = typing.length > 0 ? `${typing.join(', ')} is typing...` : '';
+      // Typing indicator can be added above input if desired
     }
   }
 
@@ -243,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showChat() {
-    currentUser = localStorage.getItem('username');
+    currentUser = localStorage.getElementById('username').value;
     loginDiv.style.display = 'none';
     registerDiv.style.display = 'none';
     chatDiv.style.display = 'flex';
@@ -257,7 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 10000);
   }
 
-  // Check if already logged in
   if (localStorage.getItem('token')) {
     showChat();
   }
